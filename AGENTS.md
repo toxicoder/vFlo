@@ -238,3 +238,16 @@ Use the relevant test runner before committing:
 - Backend changes: `npm run test:backend` from the repository root (or `.venv/bin/python -m pytest` from `backend/`)
 
 If any test fails, fix the issue before committing. Ideally, it is even better to be tracking tests live as you change files.
+
+## 10. Bazel Gate
+
+Checks are Bazel targets, and the docs, comments, help text, and error strings
+around them name targets, never a script path under `tools/bazel/`.
+
+- **The one command:** `bazelisk test //:gate --test_tag_filters= --test_output=errors` runs the suite CI runs.
+- **The dev loop:** `bazelisk test //:fast --test_tag_filters= --test_output=errors` covers ownership, the glob budget, and the docs rule with no host toolchain.
+- **Adding or deleting a file:** `bazelisk run //tools/bazel:build_files -- --write` regenerates the BUILD files; never hand-edit a generated one, `//tools/bazel:build_files_check` compares it against a fresh render.
+- **Unowned files:** a tracked file that must stay unowned goes in `bazel-unowned.txt` with a reason; `//tools/bazel:owned_files_check` fails an entry with no reason and fails a stale entry too.
+- **Globs:** every `glob()` in a BUILD file carries a `# glob-policy: <reason>` comment and the total stays at or under `tools/bazel/glob-budget.txt`, enforced by `//tools/bazel:glob_budget`.
+- **Host-delegating lanes:** the frontend and backend lanes forward to the npm and venv toolchains that already own those suites, so Bazel does not compile the app and `npm run test`, `npm run test:backend`, and `npm run lint` still work. `bazelisk run //tools/bazel:setup_host` installs what they need and `//tools/bazel:doctor` reports which lanes can run; a lane skips locally when its toolchain is missing and fails under `CI=true`.
+- **Docs:** `//tools/bazel:docs_name_targets` fails when a doc tells a person to run a gate script by path or cites a label that does not resolve. See [tools/bazel/README.md](tools/bazel/README.md).

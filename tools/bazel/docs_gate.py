@@ -7,8 +7,8 @@ checks three things over the documentation surfaces:
   1. No doc tells a person to run a checked-in gate script by path. The target
      is the supported spelling, so `bazelisk test //tools/bazel:owned_files_check`
      is right and `bash tools/bazel/lanes/owned_files_check.sh` is not.
-  2. Every `//pkg:target` a doc or help string cites actually resolves. A doc
-     that drifts from the build graph is worse than no doc.
+  2. Every target a doc or help string cites actually resolves. A doc that
+     drifts from the build graph is worse than no doc.
   3. The aggregate entry points stay documented.
 
 Usage:
@@ -37,7 +37,14 @@ ENTRY_POINT_DOCS = {
 # npm entry points). Anything under tools/bazel must be named as a target.
 FORBIDDEN_PATH_PREFIXES = ("tools/bazel/",)
 
-LABEL_RE = re.compile(r"(?<![\w/])//([A-Za-z0-9_./+-]*):([A-Za-z0-9_.+-]+)")
+# A label's package and name. The lookbehind keeps a URL out of the net: without
+# the `:` term, `http://127.0.0.1:8188` reads as package `127.0.0.1`, name `8188`.
+LABEL_RE = re.compile(r"(?<![\w/:])//([A-Za-z0-9_./+-]*):([A-Za-z0-9_.+-]+)")
+
+# Bazel's own built-in visibility labels. They are not queryable targets, so
+# resolving them against `bazelisk query` would only teach people to stop
+# writing `//visibility:public` in a BUILD file.
+BUILTIN_LABELS = {"//visibility:public", "//visibility:private"}
 RUN_BY_PATH_RE = re.compile(
     r"(?:^|[\s`'\"(=])(?:bash|sh|source|python3?|node|nohup|\./)\s+\S*"
     r"(?:tools/bazel/)[A-Za-z0-9_./-]+\.(?:sh|py|mjs|js)\b")
@@ -104,6 +111,8 @@ def check_labels(root, offenders):
         for number, line in enumerate(text.splitlines(), 1):
             for pkg, name in LABEL_RE.findall(line):
                 label = "//%s:%s" % (pkg, name)
+                if label in BUILTIN_LABELS:
+                    continue
                 if label not in labels:
                     offenders.append({
                         "file": rel, "line": number,

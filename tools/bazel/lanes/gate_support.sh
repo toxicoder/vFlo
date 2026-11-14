@@ -23,7 +23,7 @@ gate_root() {
     done
   done
   echo "error: could not locate the vlo workspace root from the runfiles tree." >&2
-  echo "       Run bazelisk test //:doctor for the host report." >&2
+  echo "       Run bazelisk test //tools/bazel:doctor for the host report." >&2
   return 1
 }
 

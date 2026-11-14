@@ -7,10 +7,11 @@ reports must either be a source/data file of some target, or be named in the
 exclusion ledger with a reason. The ledger is what keeps "100% coverage" honest
 instead of pushing junk into a catch-all filegroup.
 
-Label-to-path mapping is the part most often written wrong. A label is
-`//pkg:file` or `//:file` for the root package; mapping it by replacing every
-`:` with `/` leaves a leading slash on root-package files, which reports almost
-every file unowned. `label_to_path` below handles both forms.
+Label-to-path mapping is the part most often written wrong. A label is a
+package, a colon and a name, and the root package contributes no package
+directory; mapping a label by replacing every `:` with `/` leaves a leading
+slash on root-package files, which reports almost every file unowned.
+`label_to_path` below handles both forms.
 
 Usage:
     owned_files_check.py [--root DIR] [--ledger PATH] [--json] [--strict-ledger]
@@ -51,7 +52,13 @@ def run(cmd, cwd):
 
 
 def label_to_path(label):
-    """//pkg:file -> pkg/file ; //:file -> file ; @@repo//pkg:file -> pkg/file."""
+    """Map a label to its workspace path, root package included.
+
+    A package-qualified label becomes `<pkg>/<name>`. The root package has no
+    package directory, so its files are just `<name>`; the naive "replace the
+    colon with a slash" mapping gives them a leading slash and reports almost
+    the whole repo as unowned.
+    """
     if label.startswith("@@"):
         label = label[1:]
     if label.startswith("@"):

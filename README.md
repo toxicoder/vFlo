@@ -283,6 +283,42 @@ which is useful for headless or scripted setups:
 
 ## Development
 
+### Checks and CI (Bazel)
+
+Every check that decides whether a change passes is a Bazel target, so there is
+one command and no script paths to remember:
+
+```bash
+bazelisk test //:gate --test_tag_filters= --test_output=errors
+```
+
+That is the same suite CI runs. While you iterate, `//:fast` is the quick loop:
+ownership, the BUILD-file glob budget, and the docs rule, none of which need a
+host toolchain.
+
+```bash
+bazelisk test //:fast --test_tag_filters= --test_output=errors
+```
+
+The frontend and backend lanes are host-delegating: they forward to the npm and
+venv toolchains that already own those suites. Bazel does not compile the app,
+so the npm scripts (`npm run lint`, `npm run test`, `npm run test:backend`)
+still work and remain the way to run one suite by hand. To install what the
+lanes need, or see what is missing without installing it:
+
+```bash
+bazelisk run //tools/bazel:setup_host              # install what is missing
+bazelisk run //tools/bazel:setup_host -- --check   # report only
+```
+
+`bazelisk test //tools/bazel:doctor --test_tag_filters= --test_output=all`
+reports which lanes can run on your machine. A lane whose toolchain is missing
+skips locally and fails under `CI=true`. After adding or deleting a file,
+regenerate the BUILD files with
+`bazelisk run //tools/bazel:build_files -- --write`. The whole gate, the ledger
+of unowned files, and the glob budget are documented in
+[tools/bazel/README.md](tools/bazel/README.md).
+
 ### Extensions
 
 You can add extensions to vlo. The 
