@@ -165,9 +165,12 @@ describe('MockFileSystem project document conformance', () => {
         expect(timeline.clips).toHaveLength(12);
         expect(timeline.transitions).toHaveLength(1);
 
-        for (const metadataFile of fileSystem.list(
-            `${PROJECT_DIRECTORY}/asset-metadata`,
-        )) {
+        // The directory also carries Bazel ownership metadata (BUILD.bazel), so
+        // select the fixture documents instead of assuming the tree holds
+        // nothing else; an unfiltered list would try to parse it as JSON.
+        for (const metadataFile of fileSystem
+            .list(`${PROJECT_DIRECTORY}/asset-metadata`)
+            .filter((name) => name.endsWith(".json"))) {
             const metadata = assetMetadataDocumentSchema.parse(
                 fileSystem.readJson(
                     `${PROJECT_DIRECTORY}/asset-metadata/${metadataFile}`,
