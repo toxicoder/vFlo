@@ -60,9 +60,13 @@ def label_to_path(label):
     the whole repo as unowned.
     """
     if label.startswith("@@"):
-        label = label[1:]
+        label = label[2:]
     if label.startswith("@"):
         label = label[1:]
+    # A repo-qualified label keeps its repo name in front of the slashes; only
+    # the part after them is a workspace path.
+    if not label.startswith("//") and "//" in label:
+        label = label[label.rindex("//"):]
     if not label.startswith("//"):
         return None
     label = label[2:]

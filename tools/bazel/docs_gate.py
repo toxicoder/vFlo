@@ -33,21 +33,18 @@ ENTRY_POINT_DOCS = {
     "AGENTS.md": ("//:gate",),
 }
 
-# Docs may name a script when the script is the interface (the installer, the
-# npm entry points). Anything under tools/bazel must be named as a target.
-FORBIDDEN_PATH_PREFIXES = ("tools/bazel/",)
-
 # A label's package and name. The lookbehind keeps a URL out of the net: without
 # the `:` term, `http://127.0.0.1:8188` reads as package `127.0.0.1`, name `8188`.
-LABEL_RE = re.compile(r"(?<![\w/:])//([A-Za-z0-9_./+-]*):([A-Za-z0-9_.+-]+)")
+LABEL_RE = re.compile(r"(?<![\w/:])//([A-Za-z0-9_./+-]*):([A-Za-z0-9_.+-]+)(?<![.])")
 
 # Bazel's own built-in visibility labels. They are not queryable targets, so
 # resolving them against `bazelisk query` would only teach people to stop
 # writing `//visibility:public` in a BUILD file.
 BUILTIN_LABELS = {"//visibility:public", "//visibility:private"}
 RUN_BY_PATH_RE = re.compile(
-    r"(?:^|[\s`'\"(=])(?:bash|sh|source|python3?|node|nohup|\./)\s+\S*"
-    r"(?:tools/bazel/)[A-Za-z0-9_./-]+\.(?:sh|py|mjs|js)\b")
+    # Either an interpreter naming the script, or the script invoked directly.
+    r"(?:^|[\s`'\"(=])(?:(?:bash|sh|source|python3?|node|nohup)\s+\S*"
+    r"|\./)(?:tools/bazel/)[A-Za-z0-9_./-]+\.(?:sh|py|mjs|js)\b")
 
 
 def run(cmd, cwd):
