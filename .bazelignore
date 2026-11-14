@@ -1,0 +1,7 @@
+# Directories Bazel must not walk. Each one is a machine-local toolchain tree
+# that ships its own BUILD files, which would make it a Bazel package.
+node_modules
+frontend/node_modules
+backend/.venv
+frontend/coverage
+backend/coverage

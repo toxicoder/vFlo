@@ -1,0 +1,221 @@
+# Hand-authored: this package declares the gate, so //tools/bazel:build_files
+# leaves it alone (see HAND_AUTHORED_BUILD_DIRS in build_files.py).
+
+load("//tools/bazel:sh_rules.bzl", "sh_script", "sh_test")
+
+package(default_visibility = ["//visibility:public"])
+
+# ---------------------------------------------------------------------------
+# File ownership for this package (hand-written for the same reason).
+# ---------------------------------------------------------------------------
+
+filegroup(
+    name = "sources",
+    srcs = [
+        "build_files.py",
+        "docs_gate.py",
+        "glob_budget.py",
+        "owned_files_check.py",
+        "sh_rules.bzl",
+    ],
+)
+
+filegroup(
+    name = "lanes",
+    srcs = [
+        "lanes/backend_coverage.sh",
+        "lanes/backend_test.sh",
+        "lanes/coverage_floor.sh",
+        "lanes/docs_name_targets.sh",
+        "lanes/doctor.sh",
+        "lanes/frontend_coverage.sh",
+        "lanes/frontend_lint.sh",
+        "lanes/frontend_test.sh",
+        "lanes/gate_support.sh",
+        "lanes/glob_budget.sh",
+        "lanes/owned_files_check.sh",
+        "lanes/build_files_check.sh",
+        "lanes/setup_host.sh",
+    ],
+)
+
+filegroup(
+    name = "gate_test_srcs",
+    srcs = [
+        "tests/conftest.py",
+        "tests/test_build_files.py",
+        "tests/test_glob_budget.py",
+        "tests/test_owned_files_check.py",
+    ],
+)
+
+filegroup(
+    name = "docs",
+    srcs = [
+        "README.md",
+    ],
+)
+
+filegroup(
+    name = "config",
+    srcs = [
+        "glob-budget.txt",
+    ],
+)
+
+# ---------------------------------------------------------------------------
+# Lanes that need no host toolchain: these read git and the BUILD files only.
+# ---------------------------------------------------------------------------
+
+sh_test(
+    name = "owned_files_check",
+    src = "lanes/owned_files_check.sh",
+    data = [
+        ":lanes",
+        ":sources",
+        "//:bazel-unowned.txt",
+    ],
+    local = True,
+    tags = ["gate", "ownership"],
+)
+
+sh_test(
+    name = "glob_budget",
+    src = "lanes/glob_budget.sh",
+    data = [
+        ":config",
+        ":lanes",
+        ":sources",
+    ],
+    local = True,
+    tags = ["gate", "ownership"],
+)
+
+sh_test(
+    name = "build_files_check",
+    src = "lanes/build_files_check.sh",
+    data = [
+        ":lanes",
+        ":sources",
+        "//:bazel-unowned.txt",
+    ],
+    local = True,
+    tags = ["gate", "ownership"],
+)
+
+sh_test(
+    name = "docs_name_targets",
+    src = "lanes/docs_name_targets.sh",
+    data = [
+        ":config",
+        ":lanes",
+        ":sources",
+    ],
+    local = True,
+    tags = ["gate", "docs"],
+)
+
+sh_test(
+    name = "doctor",
+    src = "lanes/doctor.sh",
+    data = [
+        ":lanes",
+    ],
+    local = True,
+    tags = ["gate", "host"],
+)
+
+# ---------------------------------------------------------------------------
+# Host-delegating lanes. Each forwards to the toolchain that already owns the
+# suite; none of them re-implements vitest, eslint or pytest in Starlark.
+# ---------------------------------------------------------------------------
+
+sh_test(
+    name = "frontend_lint",
+    src = "lanes/frontend_lint.sh",
+    data = [
+        ":lanes",
+    ],
+    local = True,
+    tags = ["frontend", "gate", "host"],
+    timeout = "long",
+)
+
+sh_test(
+    name = "frontend_test",
+    src = "lanes/frontend_test.sh",
+    data = [
+        ":lanes",
+    ],
+    local = True,
+    tags = ["frontend", "gate", "host"],
+    timeout = "long",
+)
+
+sh_test(
+    name = "frontend_coverage",
+    src = "lanes/frontend_coverage.sh",
+    data = [
+        ":lanes",
+    ],
+    local = True,
+    tags = ["coverage", "frontend", "gate", "host"],
+    timeout = "eternal",
+)
+
+sh_test(
+    name = "backend_test",
+    src = "lanes/backend_test.sh",
+    data = [
+        ":lanes",
+    ],
+    local = True,
+    tags = ["backend", "gate", "host"],
+    timeout = "long",
+)
+
+sh_test(
+    name = "backend_coverage",
+    src = "lanes/backend_coverage.sh",
+    data = [
+        ":lanes",
+    ],
+    local = True,
+    tags = ["backend", "coverage", "gate", "host"],
+    timeout = "eternal",
+)
+
+sh_test(
+    name = "gate_tests",
+    src = "lanes/coverage_floor.sh",
+    data = [
+        ":gate_test_srcs",
+        ":lanes",
+        ":sources",
+    ],
+    local = True,
+    tags = ["coverage", "gate", "host"],
+    timeout = "long",
+)
+
+# ---------------------------------------------------------------------------
+# Developer entry points.
+# ---------------------------------------------------------------------------
+
+sh_script(
+    name = "build_files",
+    src = "lanes/build_files.sh",
+    data = [
+        ":lanes",
+        ":sources",
+        "//:bazel-unowned.txt",
+    ],
+)
+
+sh_script(
+    name = "setup_host",
+    src = "lanes/setup_host.sh",
+    data = [
+        ":lanes",
+    ],
+)

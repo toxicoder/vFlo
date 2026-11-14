@@ -1,0 +1,9 @@
+# Exclusion ledger for //tools/bazel:owned_files_check.
+#
+# One entry per tracked file that deliberately has no Bazel owner. The format is
+# `<path-or-glob><two spaces or a tab><reason>`; an entry with no reason fails
+# the gate, and --strict-ledger fails an entry that matches nothing, so a
+# deletion cannot leave a stale claim behind.
+#
+# Bazel's own control plane (.bazelrc, .bazelversion, MODULE.bazel, every
+# BUILD.bazel) is exempt in code and needs no entry here.

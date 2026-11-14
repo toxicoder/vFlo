@@ -1,0 +1,13 @@
+# Shared Bazel configuration for the vlo monorepo.
+# The one command anyone needs is `bazelisk test //:gate --test_tag_filters=
+# --test_output=errors`; see tools/bazel/README.md.
+
+# Machine-local toolchain trees that Bazel must not scan.
+common --enable_workspace=false
+
+# Keep convenience symlinks out of the source tree clutter.
+build --symlink_prefix=bazel-
+
+# Lanes are host-delegating and read the working tree, so they must not be
+# sandboxed away from it.
+test --test_output=errors

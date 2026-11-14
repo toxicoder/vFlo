@@ -1,0 +1,12 @@
+"""Bazel module definition for the vlo monorepo.
+
+The gate in //:gate is the single entry point for "did everything pass". It is
+built from core Bazel rules plus host delegation lanes; see
+tools/bazel/README.md for why the frontend and backend suites delegate to the
+npm and venv toolchains instead of being re-implemented here.
+"""
+
+module(
+    name = "vlo",
+    version = "0.3.1",
+)
