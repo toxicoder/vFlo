@@ -2,9 +2,14 @@
 # Regenerate with: bazelisk run //tools/bazel:build_files -- --write
 package(default_visibility = ["//visibility:public"])
 filegroup(
-    name = "sources",
+    name = "tests",
     srcs = [
         "MonotoneCubicSpline.test.ts",
+    ],
+)
+filegroup(
+    name = "sources",
+    srcs = [
         "MonotoneCubicSpline.ts",
         "PeriodicCubicSpline.ts",
         "aspectRatio.ts",

@@ -97,8 +97,7 @@ HEADER = (
 TEST_PATTERNS = (
     r"^test_.*\.py$",
     r".*_test\.py$",
-    r".*\.test\.[cmj]sx?$",
-    r".*\.spec\.[cmj]sx?$",
+    r".*\.(?:test|spec)\.[cm]?[jt]sx?$",
 )
 TEST_DIR_PARTS = ("__tests__", "tests", "e2e")
 

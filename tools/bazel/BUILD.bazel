@@ -44,6 +44,7 @@ filegroup(
     srcs = [
         "tests/conftest.py",
         "tests/test_build_files.py",
+        "tests/test_docs_gate.py",
         "tests/test_glob_budget.py",
         "tests/test_owned_files_check.py",
     ],

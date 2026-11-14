@@ -2,6 +2,13 @@
 # Regenerate with: bazelisk run //tools/bazel:build_files -- --write
 package(default_visibility = ["//visibility:public"])
 filegroup(
+    name = "tests",
+    srcs = [
+        "check-extension-surface.test.mjs",
+        "update.test.mjs",
+    ],
+)
+filegroup(
     name = "scripts",
     srcs = [
         "update-source.ps1",
@@ -11,7 +18,6 @@ filegroup(
     name = "sources",
     srcs = [
         "check-extension-surface.mjs",
-        "check-extension-surface.test.mjs",
         "generate_export_parity_fixtures.py",
         "generate_processing_parity_fixtures.py",
         "generate_workflow_rules_types.py",
@@ -20,6 +26,5 @@ filegroup(
         "previous-install-profiles.py",
         "run-backend.js",
         "sync-backend-requirements.py",
-        "update.test.mjs",
     ],
 )
