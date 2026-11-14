@@ -364,9 +364,3 @@
 /frontend/src/features/generation/utils/__tests__/mediaInputThumbnail.test.ts extension-surface=host
 
 /frontend/src/features/generation/utils/capturedMedia.ts extension-surface=host
-
-# Generated file-ownership manifests (//tools/bazel:build_files) list filenames
-# and dispatch, persist and present nothing, so they are not extension surface
-# however deep under an extension tree they happen to sit.
-**/BUILD.bazel -extension-surface
-**/BUILD -extension-surface
