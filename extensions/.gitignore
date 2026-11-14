@@ -6,3 +6,5 @@
 !/installed/
 /installed/*
 !/installed/.gitkeep
+!/BUILD.bazel
+!/installed/BUILD.bazel
