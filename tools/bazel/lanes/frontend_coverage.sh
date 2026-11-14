@@ -9,5 +9,6 @@ root="$(gate_root)"
 gate_require_or_skip "frontend node_modules" "[ -d '$root/frontend/node_modules' ]"
 gate_require_or_skip "vitest" "[ -x '$root/frontend/node_modules/.bin/vitest' ]"
 cd "$root/frontend"
-COVERAGE_STAGE=wave3 ./node_modules/.bin/vitest run --coverage
+workers="$(gate_worker_cap 3)"
+COVERAGE_STAGE=wave3 ./node_modules/.bin/vitest run --coverage --maxWorkers "$workers"
 exec node scripts/verify-coverage.mjs

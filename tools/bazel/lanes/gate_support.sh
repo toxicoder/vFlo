@@ -46,3 +46,26 @@ gate_require_or_skip() {
 gate_backend_python() {
   echo "$1/backend/.venv/bin/python"
 }
+
+# Cap a host tool's worker pool so concurrent lanes cannot oversubscribe the host.
+#
+# Bazel runs the heavyweight lanes side by side and vitest starts one worker per
+# core. Two suites x 16 workers on a 16-core host leaves each worker a third of a
+# core, and the slowest import-bound test then misses its own in-test timeout even
+# though the suite passes on a quiet machine. Inside a Bazel test a lane takes its
+# share of the machine, where share is the number of heavyweight lanes the host may
+# be running at once (see the --local_test_jobs bound in .bazelrc); outside it (a
+# plain `npm test`) the tool keeps its own defaults.
+gate_worker_cap() {
+  local share="$1" cores per
+  cores="$(nproc 2>/dev/null || echo 4)"
+  if [ -z "${TEST_TMPDIR:-}" ]; then
+    echo "$cores"
+    return 0
+  fi
+  per=$(( cores / share ))
+  if [ "$per" -lt 2 ]; then
+    per=2
+  fi
+  echo "$per"
+}

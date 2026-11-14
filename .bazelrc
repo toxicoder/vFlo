@@ -15,3 +15,11 @@ build --symlink_prefix=bazel-
 test --test_env=PATH
 test --test_env=HOME
 test --test_output=errors
+
+# Bound how many lanes share the host. Each heavyweight lane starts its own
+# toolchain's full worker pool and the box has one fixed core count, so with all
+# of them running at once the slowest test in a suite misses its own wall-clock
+# timeout -- a result that reports the runner rather than the code. Three lanes at
+# a time keeps the running worker total at or under nproc, counting each vitest
+# lane at the share gate_worker_cap gives it.
+test --local_test_jobs=3
