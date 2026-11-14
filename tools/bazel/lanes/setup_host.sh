@@ -3,7 +3,7 @@
 #
 # `bazelisk run //tools/bazel:setup_host -- --check` prints what is missing and
 # installs nothing; without --check it installs. Version floors are pinned here
-# and reported by //tools/bazel:doctor.
+# and reported by the //tools/bazel:doctor lane.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=gate_support.sh
@@ -56,7 +56,34 @@ if [ ! -x "$root/backend/.venv/bin/pytest" ]; then
   echo "creating backend test venv"
   python3 -m venv "$root/backend/.venv"
   "$root/backend/.venv/bin/python" -m pip install --quiet --upgrade pip
-  "$root/backend/.venv/bin/python" -m pip install --quiet -r "$root/backend/requirements-test.txt"
+
+  # Pin the same way CI does. requirements-test.txt is deliberately unpinned,
+  # and installing it bare drifts the venv off backend/uv.lock: a newer FastAPI
+  # breaks the extension-approval tests for reasons no change caused. CI exports
+  # the lock as a constraints file rather than installing it, so the locked ML
+  # stack stays out. Same trick here.
+  constraints="$(mktemp)"
+  trap 'rm -f "$constraints"' EXIT
+  uv_bin="$(command -v uv || true)"
+  if [ -z "$uv_bin" ]; then
+    "$root/backend/.venv/bin/python" -m pip install --quiet uv
+    uv_bin="$root/backend/.venv/bin/uv"
+  fi
+  if ! (cd "$root/backend" && "$uv_bin" lock --check \
+        && "$uv_bin" export --frozen --no-hashes --all-extras --no-emit-project \
+             --output-file "$constraints" >/dev/null); then
+    # No usable lock: install the declared set and say so, because an unpinned
+    # venv is the thing this block exists to prevent.
+    echo "warning: backend/uv.lock could not be used; installing unpinned" >&2
+    rm -f "$constraints"
+  fi
+  if [ -f "$constraints" ]; then
+    "$root/backend/.venv/bin/python" -m pip install --quiet \
+      -r "$root/backend/requirements-test.txt" -c "$constraints"
+  else
+    "$root/backend/.venv/bin/python" -m pip install --quiet \
+      -r "$root/backend/requirements-test.txt"
+  fi
 fi
 
 echo "host is ready"

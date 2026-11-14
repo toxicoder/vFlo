@@ -143,3 +143,37 @@ jobs:
         name: backend-coverage
         path: backend/coverage.xml
         if-no-files-found: error
+
+  # The gate is the repo's single entry point, so CI runs exactly the command a
+  # developer runs. CI=true is what makes a lane whose toolchain is missing fail
+  # rather than skip, which is why this job installs both toolchains first.
+  bazel-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Set up Bazel
+      uses: bazelbuild/setup-bazelisk@v3
+
+    # The gate's own bootstrap, so CI proves the same path a new machine takes.
+    - name: Bootstrap host toolchains
+      run: bazelisk run //tools/bazel:setup_host
+
+    - name: Report host readiness
+      run: bazelisk test //tools/bazel:doctor --test_tag_filters= --test_output=all --nocache_test_results
+
+    - name: Run the gate
+      run: bazelisk test //:gate --test_tag_filters= --test_output=errors --nocache_test_results

@@ -10,4 +10,6 @@ py="$(gate_backend_python "$root")"
 gate_require_or_skip "backend/.venv" "[ -x '$py' ]"
 gate_require_or_skip "pytest-cov" "[ -x '$root/backend/.venv/bin/py.test' ] || '$py' -c 'import pytest_cov'"
 cd "$root/backend"
-exec "$root/backend/.venv/bin/pytest" --cov --cov-report=term-missing
+# Deselected for the same reason CI deselects it: the torch stack is out of
+# requirements-test.txt, so coverage measures the lane CI actually runs.
+exec "$root/backend/.venv/bin/pytest" -m "not requires_torch" --cov --cov-report=term-missing

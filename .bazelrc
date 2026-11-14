@@ -9,5 +9,9 @@ common --enable_workspace=false
 build --symlink_prefix=bazel-
 
 # Lanes are host-delegating and read the working tree, so they must not be
-# sandboxed away from it.
+# sandboxed away from it. They also invoke the toolchains the host installed
+# (node, npm, the backend venv), which live wherever the developer put them, so
+# the host PATH and HOME have to survive into the test action.
+test --test_env=PATH
+test --test_env=HOME
 test --test_output=errors
