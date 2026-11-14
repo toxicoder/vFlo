@@ -125,6 +125,17 @@ before you push. The CI job bootstraps first with
 `bazelisk run //tools/bazel:setup_host` and then runs `//:gate`, so a host
 setup that breaks shows up there rather than on a fresh machine.
 
+### Lanes share one host
+
+Every lane is `local`, so the heavyweight ones compete for the same cores. Vitest
+alone would start one worker per core, and three suites doing that at once leaves
+each worker a third of a core, which is enough to push the slowest import-bound
+test past its own wall-clock timeout on a machine where the suite passes in
+seconds. Two bounds keep the running worker total under `nproc`: `.bazelrc` caps
+how many lanes run at a time, and each vitest lane caps its own pool at its share
+of that window. Neither applies outside a Bazel test, so `npm run test` still gets
+every core.
+
 ## Why sh_rules.bzl exists
 
 Bazel 9 dropped the native `sh_test` and `sh_binary` rules, and this gate stays
@@ -149,3 +160,9 @@ tells someone to run a checked-in gate script by path instead of naming the
 target, when a cited label does not resolve in `bazelisk query //...`, or when
 one of the entry-point docs (README.md, CONTRIBUTING.md, AGENTS.md) stops naming
 `//:gate` or `//:fast`.
+
+Test fixtures sit outside that rule. A test that asserts the checker rejects a dead
+label has to write one down, so files under `tests/` or `__tests__/`, and
+`test_`-prefixed modules, are read as code rather than as prose. The exemption
+narrows the label scan only: the script-path rule and the entry-point rule still
+read every markdown file in the repository.
