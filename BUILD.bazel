@@ -1,0 +1,93 @@
+# Hand-authored root package: it owns the repository's top-level files and
+# declares the one entry point, //:gate. //tools/bazel:build_files leaves this
+# file alone (see HAND_AUTHORED_BUILD_DIRS).
+
+package(default_visibility = ["//visibility:public"])
+
+# ---------------------------------------------------------------------------
+# Top-level file ownership.
+# ---------------------------------------------------------------------------
+
+filegroup(
+    name = "docs",
+    srcs = [
+        "AGENTS.md",
+        "CHANGELOG.md",
+        "CLA-INDIVIDUAL.md",
+        "CONTRIBUTING.md",
+        "README.md",
+    ],
+)
+
+filegroup(
+    name = "config",
+    srcs = [
+        ".codex",
+        ".dockerignore",
+        ".gitattributes",
+        ".gitignore",
+        "bazel-unowned.txt",
+        "extra_model_paths.yaml.example",
+        "package-lock.json",
+        "package.json",
+    ],
+)
+
+filegroup(
+    name = "scripts",
+    srcs = [
+        "install.bat",
+        "install.sh",
+        "run.bat",
+        "run.sh",
+        "update.bat",
+        "update.sh",
+    ],
+)
+
+filegroup(
+    name = "sources",
+    srcs = [
+        "playwright.config.ts",
+    ],
+)
+
+filegroup(
+    name = "license",
+    srcs = [
+        "LICENSE",
+    ],
+)
+
+# Everything the gate can assert on without a host toolchain.
+test_suite(
+    name = "fast",
+    tags = ["gate"],
+    tests = [
+        "//tools/bazel:build_files_check",
+        "//tools/bazel:docs_name_targets",
+        "//tools/bazel:glob_budget",
+        "//tools/bazel:owned_files_check",
+    ],
+)
+
+# The one command: `bazelisk test //:gate --test_tag_filters= --test_output=errors`
+# A lane whose host toolchain is missing skips locally and fails under CI=true
+# or REQUIRE_LINT_TOOLS=1; //:doctor reports which ones.
+test_suite(
+    name = "gate",
+    tags = ["gate"],
+    tests = [
+        "//tools/bazel:backend_coverage",
+        "//tools/bazel:backend_test",
+        "//tools/bazel:build_files_check",
+        "//tools/bazel:docs_name_targets",
+        "//tools/bazel:doctor",
+        "//tools/bazel:frontend_coverage",
+        "//tools/bazel:frontend_lint",
+        "//tools/bazel:frontend_test",
+        "//tools/bazel:gate_tests",
+        "//tools/bazel:glob_budget",
+        "//tools/bazel:owned_files_check",
+    ],
+)

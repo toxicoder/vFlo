@@ -75,3 +75,6 @@ backend/sam2
 backend/runtime/
 frontend/dist-render-worker/
 .vlo-update-backups/
+
+# Bazel convenience symlinks
+bazel-*
