@@ -62,12 +62,32 @@ def tracked_docs(root):
             yield rel
 
 
+def is_test_fixture(rel):
+    """True when a file's label-like strings are fixtures rather than prose.
+
+    Proving the checker rejects a dead label means writing one down, so the
+    gate's own contract tests are dense with placeholders of the form
+    ``//<pkg>:<name>``, and a frontend ``__tests__`` file cites labels the same
+    way. That text is input to a test, not a promise to a reader, so resolving it
+    would only teach people to delete the assertion. Documentation keeps full
+    coverage: this only ever removes files from the label scan, never the
+    script-path or entry-point checks, which still read every .md in the repo.
+    """
+    parts = rel.split("/")
+    if any(part in ("tests", "__tests__") for part in parts[:-1]):
+        return True
+    base = parts[-1]
+    return base.startswith("test_") or base.endswith((".test.py", "_test.py"))
+
+
 def tracked_text(root):
     """Docs plus the .py/.sh/.bzl text a person reads when a lane fails."""
     out = run(["git", "ls-files", "-z"], root)
     for rel in (p for p in out.split("\0") if p):
         if rel.endswith(DOC_GLOBS) or rel.startswith("tools/bazel/") and \
            rel.endswith((".py", ".sh", ".bzl")):
+            if is_test_fixture(rel):
+                continue
             yield rel
 
 

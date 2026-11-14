@@ -91,6 +91,42 @@ def test_tracked_text_adds_the_lane_sources(patch_run) -> None:
     ]
 
 
+def test_tracked_text_skips_test_fixtures(patch_run) -> None:
+    patch_run(
+        docs_gate,
+        git_stdout={
+            "ls-files": _manifest(
+                "docs/guide.md",
+                "tools/bazel/gate.py",
+                "tools/bazel/tests/test_gate.py",
+                "tools/bazel/__tests__/gate_check.py",
+                "frontend/src/__tests__/App.test.tsx",
+            )
+        },
+    )
+    assert list(docs_gate.tracked_text(Path("/repo"))) == [
+        "docs/guide.md",
+        "tools/bazel/gate.py",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("rel", "expected"),
+    [
+        ("tools/bazel/tests/test_gate.py", True),
+        ("tools/bazel/__tests__/gate.py", True),
+        ("test_gate.py", True),
+        ("tools/bazel/gate.test.py", True),
+        ("tools/bazel/gate_test.py", True),
+        ("tools/bazel/docs_gate.py", False),
+        ("tools/bazel/tests.py", False),
+        ("docs/guide.md", False),
+    ],
+)
+def test_is_test_fixture_recognises_fixture_shapes(rel: str, expected: bool) -> None:
+    assert docs_gate.is_test_fixture(rel) is expected
+
+
 def test_known_labels_strips_blank_lines(patch_run) -> None:
     patch_run(docs_gate, bazelisk_stdout="  //:gate  \n\n   \n//:fast\n")
     assert docs_gate.known_labels(Path("/repo")) == {"//:gate", "//:fast"}
@@ -252,6 +288,36 @@ def test_a_sentence_final_period_is_kept_out_of_the_reported_label(
     out = capsys.readouterr().out
     assert "cites //:gone, which bazelisk query cannot resolve" in out
     assert "cites //:gone., which" not in out
+
+
+def test_a_fixture_may_cite_a_label_that_does_not_resolve(
+    git_repo, patch_run
+) -> None:
+    """The gate's own fixtures assert against dead labels, so they stay code."""
+    repo = docs_repo(
+        git_repo,
+        {
+            "tools/bazel/tests/test_gate.py": (
+                "FIXTURE = {'docs/style.md': 'Run //:gone.\\n'}\n"
+            )
+        },
+    )
+    patch_run(docs_gate, bazelisk_stdout=QUERY)
+    assert invoke(repo) == 0
+
+
+def test_a_non_fixture_source_still_has_to_resolve_its_labels(
+    git_repo, patch_run, capsys
+) -> None:
+    """The exemption follows fixtures only, never the whole directory."""
+    repo = docs_repo(
+        git_repo, {"tools/bazel/gate_notes.py": "# see //:gone\n"}
+    )
+    patch_run(docs_gate, bazelisk_stdout=QUERY)
+    assert invoke(repo) == 1
+    assert "cites //:gone, which bazelisk query cannot resolve" in (
+        capsys.readouterr().out
+    )
 
 
 def test_labels_are_checked_in_lane_sources_too(git_repo, patch_run, capsys) -> None:
