@@ -52,21 +52,27 @@ def run(cmd, cwd):
 
 
 def label_to_path(label):
-    """Map a label to its workspace path, root package included.
+    """Map a main-repo label to its workspace path, root package included.
 
-    A package-qualified label becomes `<pkg>/<name>`. The root package has no
+    A label is a package, a colon and a name, and the root package contributes no
     package directory, so its files are just `<name>`; the naive "replace the
-    colon with a slash" mapping gives them a leading slash and reports almost
-    the whole repo as unowned.
+    colon with a slash" mapping gives them a leading slash and reports almost the
+    whole repo as unowned.
+
+    Only main-repo labels map. `bazelisk query` also emits sources from external
+    repositories, and a foreign path has no meaning in this workspace: mapping
+    `@@rules_python//pkg:file` to `pkg/file` would let a file nobody tracks here
+    mark a workspace file as owned, which is the false negative this gate exists
+    to prevent. Any label whose slashes carry a repo name therefore returns None,
+    including the canonical `@//` main-repo spelling: erring toward dropping a
+    label can only make a file look unowned, never falsely owned.
     """
     if label.startswith("@@"):
         label = label[2:]
     if label.startswith("@"):
-        label = label[1:]
-    # A repo-qualified label keeps its repo name in front of the slashes; only
-    # the part after them is a workspace path.
-    if not label.startswith("//") and "//" in label:
-        label = label[label.rindex("//"):]
+        # An external repo, or a repo-qualified label after the @@ strip. Either
+        # way the path belongs to that repo, not to this workspace.
+        return None
     if not label.startswith("//"):
         return None
     label = label[2:]
